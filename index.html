@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>skvault — The Sovereign Secrets Vault</title>
+  <meta name="description" content="A KeePass-backed secrets vault whose master key is PGP-sealed to your sovereign identity and unlocked into gpg-agent. Split out of skingest, depends on capauth.seal, reached through one stable shim. The vault never holds your master.">
+
+  <!-- Canonical + Sitemap -->
+  <link rel="canonical" href="https://skvault.skworld.io/">
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="skvault — The Sovereign Secrets Vault">
+  <meta property="og:description" content="KeePass secrets, a PGP-sealed master, gpg-agent unlock. Depends on capauth.seal · reached through one stable shim · never holds your master. Part of SKWorld.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://skvault.skworld.io/">
+  <meta property="og:site_name" content="skvault · SKWorld">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://skvault.skworld.io/og.png">
+  <meta property="og:image:secure_url" content="https://skvault.skworld.io/og.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="skvault — The Sovereign Secrets Vault. KeePass + PGP-sealed master + gpg-agent. capauth seals it, skvault keeps it, skos and skguide consume it.">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@smilinTux">
+  <meta name="twitter:title" content="skvault — The Sovereign Secrets Vault">
+  <meta name="twitter:description" content="KeePass secrets · PGP-sealed master · gpg-agent unlock. Depends on capauth.seal, reached through one stable shim, never holds your master.">
+  <meta name="twitter:image" content="https://skvault.skworld.io/og.png">
+  <meta name="twitter:image:alt" content="skvault — The Sovereign Secrets Vault">
+  <meta name="twitter:creator" content="@smilinTux">
+
+  <!-- Theme -->
+  <meta name="theme-color" content="#0a0a0f">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
+
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://smilintux.github.io/#organization",
+        "name": "smilinTux",
+        "url": "https://smilintux.github.io",
+        "sameAs": ["https://github.com/smilinTux"],
+        "description": "Sovereign AI infrastructure — building open, authentic, human-first technology. Home of the Pengu Empire.",
+        "foundingDate": "2024",
+        "knowsAbout": ["Sovereign AI", "Secrets management", "PGP / OpenPGP", "KeePass", "Decentralized identity", "Shamir secret sharing"]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://skvault.skworld.io/#website",
+        "name": "skvault",
+        "url": "https://skvault.skworld.io",
+        "publisher": {"@id": "https://smilintux.github.io/#organization"},
+        "inLanguage": "en-US"
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://skvault.skworld.io/#app",
+        "name": "skvault",
+        "alternateName": "Sovereign Secrets Vault",
+        "description": "A KeePass-backed secrets vault whose master key is PGP-sealed to your sovereign identity and unlocked into gpg-agent. Split out of skingest, it depends on capauth.seal for seal/unseal and is reached through one stable shim. The vault never holds your master.",
+        "url": "https://skvault.skworld.io",
+        "applicationCategory": "SecurityApplication",
+        "operatingSystem": "Linux, macOS",
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+        "license": "https://www.gnu.org/licenses/gpl-3.0.en.html",
+        "codeRepository": "https://github.com/smilinTux/skvault",
+        "isPartOf": {"@type": "SoftwareApplication", "name": "SKWorld", "url": "https://skworld.io"},
+        "publisher": {"@id": "https://smilintux.github.io/#organization"}
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    /* ── Reset + tokens ───────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --gold:   #FFD700;
+      --pink:   #FF69B4;
+      --cyan:   #00FFFF;
+      --green:  #50fa7b;
+      --purple: #bd93f9;
+      --bg:     #0a0a0f;
+      --bg2:    #0f1020;
+      --card:   rgba(15, 16, 40, 0.7);
+      --border: rgba(255,215,0,0.15);
+      --text:   rgba(255,255,255,0.88);
+      --dim:    rgba(255,255,255,0.55);
+      --mono:   'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    /* ── Starfield background ─────────────── */
+    .starfield {
+      position: fixed; inset: 0; z-index: -1;
+      background: radial-gradient(ellipse at 50% -10%, #1a1a3e 0%, #0d0d1f 40%, #0a0a0f 100%);
+    }
+    .stars {
+      position: absolute; inset: 0;
+      background-image:
+        radial-gradient(2px 2px at 20px 30px,  rgba(255,215,0,0.9),  transparent),
+        radial-gradient(2px 2px at 40px 70px,  rgba(0,255,255,0.7),  transparent),
+        radial-gradient(1px 1px at 90px 40px,  rgba(255,255,255,0.9),transparent),
+        radial-gradient(1px 1px at 130px 80px, rgba(255,105,180,0.8),transparent),
+        radial-gradient(2px 2px at 160px 30px, rgba(255,255,255,0.6),transparent),
+        radial-gradient(1px 1px at 70px 55px,  rgba(189,147,249,0.7),transparent);
+      background-repeat: repeat;
+      background-size: 200px 100px;
+      animation: starscroll 100s linear infinite;
+    }
+    .stars:nth-child(2) { background-size: 270px 130px; animation-duration: 145s; animation-direction: reverse; opacity: .7; }
+    .stars:nth-child(3) { background-size: 340px 165px; animation-duration: 190s; opacity: .45; }
+    @keyframes starscroll {
+      from { transform: translateX(0)      translateY(0); }
+      to   { transform: translateX(-200px) translateY(-100px); }
+    }
+
+    /* ── Floating deco ────────────────────── */
+    .float-deco {
+      position: fixed; font-size: 1.6rem; z-index: 0; pointer-events: none;
+      animation: floatDeco 18s infinite ease-in-out;
+      opacity: .35;
+    }
+    @keyframes floatDeco {
+      0%,100% { transform: translateY(0) rotate(-4deg); opacity: .3; }
+      33%  { transform: translateY(-28px) rotate(6deg); opacity: .6; }
+      66%  { transform: translateY(-48px) rotate(-2deg); opacity: .45; }
+    }
+
+    /* ── Layout helpers ───────────────────── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 1; }
+    section { padding: 5rem 0; }
+
+    /* ── Sticky nav ───────────────────────── */
+    .site-nav {
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(10, 10, 20, 0.88);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(255,215,0,0.12);
+    }
+    .nav-inner {
+      display: flex; justify-content: space-between; align-items: center;
+      max-width: 1200px; margin: 0 auto; padding: .75rem 2rem;
+    }
+    .nav-logo {
+      font-family: var(--mono); font-weight: 700; font-size: 1.25rem;
+      color: var(--gold); text-decoration: none; letter-spacing: -.5px;
+    }
+    .nav-logo span { color: var(--cyan); }
+    .nav-links { display: flex; list-style: none; gap: 1.4rem; align-items: center; }
+    .nav-links a {
+      color: var(--dim); text-decoration: none; font-size: .875rem;
+      font-weight: 500; transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--gold), var(--pink));
+      color: #000 !important; padding: .45rem 1.2rem; border-radius: 6px;
+      font-weight: 700 !important; font-size: .85rem !important;
+    }
+    .nav-cta:hover { opacity: .85; }
+    @media (max-width: 768px) { .nav-links { display: none; } }
+
+    /* ── HERO ─────────────────────────────── */
+    .hero {
+      padding: 7rem 0 5rem;
+      text-align: center;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, rgba(189,147,249,.08) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      font-family: var(--mono); font-size: .9rem; color: var(--cyan);
+      letter-spacing: .15em; text-transform: uppercase; margin-bottom: 1.5rem;
+      display: inline-block;
+      animation: eyebrowPulse 4s ease-in-out infinite;
+    }
+    @keyframes eyebrowPulse {
+      0%,100% { text-shadow: 0 0 8px rgba(0,255,255,.4); }
+      50%      { text-shadow: 0 0 18px rgba(0,255,255,.8), 0 0 35px rgba(0,255,255,.3); }
+    }
+    .hero-title {
+      font-size: clamp(4rem, 9vw, 8rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -2px;
+      margin-bottom: .75rem;
+      background: linear-gradient(140deg, var(--gold) 0%, var(--pink) 35%, var(--cyan) 65%, var(--gold) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: titleShimmer 5s ease-in-out infinite;
+    }
+    @keyframes titleShimmer {
+      0%,100% { filter: hue-rotate(0deg); }
+      40%      { filter: hue-rotate(25deg); }
+      70%      { filter: hue-rotate(-15deg); }
+    }
+    .hero-tagline {
+      font-size: clamp(1.25rem, 2.5vw, 1.7rem);
+      color: rgba(255,255,255,.8);
+      font-weight: 300;
+      max-width: 720px;
+      margin: 0 auto 1rem;
+      line-height: 1.5;
+    }
+    .hero-tagline strong { color: var(--gold); font-weight: 600; }
+    .hero-sub {
+      font-size: 1rem; color: var(--dim);
+      max-width: 560px; margin: 0 auto 3rem;
+    }
+
+    /* Install box */
+    .install-box-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+    .install-box {
+      display: flex; align-items: center; gap: 1rem;
+      background: rgba(0,0,0,.7);
+      border: 1.5px solid rgba(255,215,0,.45);
+      border-radius: 12px;
+      padding: 1rem 1.4rem;
+      max-width: 600px; width: 100%;
+      transition: border-color .3s, box-shadow .3s;
+    }
+    .install-box:hover {
+      border-color: var(--gold);
+      box-shadow: 0 0 28px rgba(255,215,0,.25);
+    }
+    .install-cmd {
+      font-family: var(--mono); font-size: .95rem; color: var(--green);
+      flex: 1; text-align: left; word-break: break-all;
+    }
+    .copy-btn {
+      background: none; border: 1px solid rgba(255,215,0,.4);
+      color: var(--gold); border-radius: 6px; padding: .3rem .7rem;
+      font-size: .8rem; font-family: var(--mono); cursor: pointer;
+      transition: all .2s; white-space: nowrap;
+    }
+    .copy-btn:hover { background: rgba(255,215,0,.1); border-color: var(--gold); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green); background: rgba(80,250,123,.1); }
+    .install-sub { font-size: .85rem; color: var(--dim); text-align: center; }
+
+    /* Hero CTAs */
+    .hero-ctas {
+      display: flex; justify-content: center; gap: 1rem;
+      flex-wrap: wrap; margin-top: 1rem;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: .45rem;
+      padding: .8rem 1.8rem; border-radius: 10px;
+      font-weight: 600; font-size: .95rem; text-decoration: none;
+      transition: all .25s; position: relative; overflow: hidden;
+      border: none; cursor: pointer;
+    }
+    .btn::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+      transform: translateX(-100%); transition: transform .5s;
+    }
+    .btn:hover::after { transform: translateX(100%); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold) 0%, var(--pink) 60%);
+      color: #000;
+      box-shadow: 0 4px 20px rgba(255,215,0,.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,215,0,.5); }
+    .btn-outline {
+      background: rgba(255,255,255,.04);
+      border: 1.5px solid rgba(255,215,0,.3);
+      color: rgba(255,255,255,.85);
+    }
+    .btn-outline:hover { border-color: var(--gold); background: rgba(255,215,0,.07); transform: translateY(-2px); }
+    .btn-ghost {
+      background: transparent; border: 1.5px solid rgba(255,255,255,.15);
+      color: var(--dim);
+    }
+    .btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); transform: translateY(-2px); }
+
+    /* Trust badges under hero */
+    .hero-trust {
+      display: flex; justify-content: center; gap: 2rem;
+      flex-wrap: wrap; margin-top: 3rem;
+      font-size: .82rem; color: var(--dim);
+    }
+    .hero-trust span { display: flex; align-items: center; gap: .4rem; }
+    .hero-trust strong { color: rgba(255,255,255,.7); }
+
+    /* ── WHAT IT DOES — feature cards ─────── */
+    .tiers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .tier-card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      padding: 2rem;
+      transition: all .35s;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+    .tier-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+    }
+    .tier-card.personal::before { background: linear-gradient(90deg, var(--gold), var(--pink)); }
+    .tier-card.team::before    { background: linear-gradient(90deg, var(--cyan), var(--purple)); }
+    .tier-card.enterprise::before { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+    .tier-card.personal {
+      border-color: rgba(255,215,0,.4);
+      box-shadow: 0 0 40px rgba(255,215,0,.07);
+    }
+    .tier-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 50px rgba(0,0,0,.4), 0 0 35px rgba(255,215,0,.12);
+    }
+    .tier-badge {
+      display: inline-block;
+      font-family: var(--mono); font-size: .7rem; font-weight: 700;
+      padding: .2rem .6rem; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: .1em;
+      margin-bottom: 1rem;
+    }
+    .tier-badge.personal { background: rgba(255,215,0,.15); color: var(--gold); border: 1px solid rgba(255,215,0,.3); }
+    .tier-badge.team     { background: rgba(0,255,255,.1);  color: var(--cyan);  border: 1px solid rgba(0,255,255,.3); }
+    .tier-badge.enterprise { background: rgba(80,250,123,.1); color: var(--green); border: 1px solid rgba(80,250,123,.3); }
+    .tier-icon { font-size: 2.5rem; margin-bottom: .8rem; display: block; }
+    .tier-title { font-size: 1.4rem; font-weight: 700; margin-bottom: .5rem; color: #fff; }
+    .tier-desc  { font-size: .925rem; color: var(--dim); line-height: 1.6; margin-bottom: 1.2rem; }
+    .tier-list  { list-style: none; }
+    .tier-list li {
+      font-size: .875rem; color: rgba(255,255,255,.65);
+      padding: .35rem 0 .35rem 1.6rem; position: relative;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+    .tier-list li:last-child { border-bottom: none; }
+    .tier-list li::before {
+      content: '▸'; position: absolute; left: 0;
+      color: var(--gold); font-size: .75rem;
+    }
+
+    /* ── ARCHITECTURE overview ────────────── */
+    .arch-wrap {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;
+    }
+    @media (max-width: 860px) { .arch-wrap { grid-template-columns: 1fr; } }
+    .arch-text h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 800; margin-bottom: 1rem; }
+    .arch-text p  { color: var(--dim); line-height: 1.75; margin-bottom: 1rem; }
+    .arch-text p strong { color: rgba(255,255,255,.85); }
+    .arch-pills {
+      display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.5rem;
+    }
+    .arch-pill {
+      font-family: var(--mono); font-size: .78rem;
+      padding: .3rem .75rem; border-radius: 20px;
+      border: 1px solid rgba(255,215,0,.25); color: var(--gold);
+      background: rgba(255,215,0,.06);
+    }
+    .arch-diagram {
+      background: rgba(0,0,0,.5);
+      border: 1px solid rgba(255,215,0,.2);
+      border-radius: 16px; padding: 2rem;
+      font-family: var(--mono); font-size: .78rem; line-height: 1.8;
+    }
+    .arch-diagram .d-label {
+      color: var(--cyan); font-weight: 700; font-size: .82rem;
+      margin-bottom: .5rem; display: block;
+    }
+    .arch-diagram .d-row {
+      color: rgba(255,255,255,.55);
+    }
+    .arch-diagram .d-row strong { color: var(--gold); }
+    .arch-diagram .d-row em { color: var(--green); font-style: normal; }
+    .arch-diagram hr { border: none; border-top: 1px solid rgba(255,255,255,.08); margin: .8rem 0; }
+
+    /* ── Section headings ─────────────────── */
+    .section-eyebrow {
+      font-family: var(--mono); font-size: .8rem; color: var(--cyan);
+      letter-spacing: .15em; text-transform: uppercase; margin-bottom: .75rem;
+    }
+    .section-title {
+      font-size: clamp(1.9rem, 3.5vw, 2.8rem); font-weight: 800;
+      margin-bottom: .75rem; line-height: 1.15;
+    }
+    .section-sub { color: var(--dim); max-width: 620px; font-size: 1rem; line-height: 1.7; }
+
+    /* ── ECOSYSTEM placement diagram ──────── */
+    .eco-flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      gap: 1rem; align-items: stretch; margin-top: 3rem;
+    }
+    @media (max-width: 900px) {
+      .eco-flow { grid-template-columns: 1fr; }
+      .eco-flow .flow-arrow { transform: rotate(90deg); justify-self: center; }
+    }
+    .flow-node {
+      background: var(--card); backdrop-filter: blur(12px);
+      border: 1.5px solid var(--border); border-radius: 16px;
+      padding: 1.6rem 1.4rem; text-align: center; display: flex;
+      flex-direction: column; gap: .5rem; transition: all .3s;
+    }
+    .flow-node:hover { transform: translateY(-5px); box-shadow: 0 16px 40px rgba(0,0,0,.35); }
+    .flow-node.keystone { border-color: var(--gold); box-shadow: 0 0 40px rgba(255,215,0,.1); }
+    .flow-icon { font-size: 2.2rem; }
+    .flow-name { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; color: #fff; }
+    .flow-role { font-family: var(--mono); font-size: .68rem; color: var(--cyan); text-transform: uppercase; letter-spacing: .1em; }
+    .flow-desc { font-size: .82rem; color: var(--dim); line-height: 1.5; }
+    .flow-node.keystone .flow-name { color: var(--gold); }
+    .flow-arrow {
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 1.6rem; color: var(--pink);
+    }
+    .flow-arrow small { display:block; font-size:.6rem; color:var(--dim); letter-spacing:.05em; }
+
+    .siblings-row {
+      display: flex; flex-wrap: wrap; gap: .75rem;
+      justify-content: center; margin-top: 2.5rem;
+    }
+    .sibling-chip {
+      display: inline-flex; align-items: center; gap: .45rem;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(0,255,255,.18);
+      border-radius: 10px; padding: .55rem 1.1rem;
+      font-family: var(--mono); font-size: .82rem; color: rgba(255,255,255,.72);
+      text-decoration: none; transition: all .25s;
+    }
+    .sibling-chip:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,255,255,.05); transform: translateY(-2px); }
+    .sibling-chip em { font-style: normal; color: var(--dim); font-size: .72rem; }
+
+    /* ── FIXINS — the engineering story ───── */
+    .fixins-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.4rem; margin-top: 3rem;
+    }
+    .c-card {
+      background: var(--card); backdrop-filter: blur(12px);
+      border: 1.5px solid var(--border); border-radius: 16px;
+      padding: 1.75rem; transition: all .3s;
+    }
+    .c-card:hover { transform: translateY(-6px); border-color: rgba(255,215,0,.4); box-shadow: 0 16px 40px rgba(0,0,0,.35); }
+    .c-card-head { display: flex; align-items: center; gap: .75rem; margin-bottom: .9rem; }
+    .c-icon { font-size: 1.9rem; }
+    .c-label { font-family: var(--mono); font-size: .68rem; color: var(--dim); text-transform: uppercase; letter-spacing: .1em; }
+    .c-name  { font-size: 1.05rem; font-weight: 700; color: #fff; }
+    .c-card p { font-size: .875rem; color: var(--dim); line-height: 1.65; }
+    .c-card p strong { color: rgba(255,255,255,.82); }
+    .c-card code { font-family: var(--mono); font-size: .82em; color: var(--gold); background: rgba(255,215,0,.07); padding: .05rem .35rem; border-radius: 4px; }
+
+    /* ── Open standards row ───────────────── */
+    .standards-grid {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 1rem; margin-top: 2.5rem;
+    }
+    .std-pill {
+      display: flex; align-items: center; gap: .5rem;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px; padding: .6rem 1.2rem;
+      font-family: var(--mono); font-size: .82rem; color: rgba(255,255,255,.7);
+      transition: all .2s;
+    }
+    .std-pill:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,255,255,.05); }
+
+    /* ── ECOSYSTEM links ──────────────────── */
+    .eco-grid {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      justify-content: center; margin-top: 2rem;
+    }
+    .eco-link {
+      display: inline-flex; align-items: center; gap: .45rem;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,215,0,.18);
+      border-radius: 24px; padding: .55rem 1.2rem;
+      font-size: .875rem; font-weight: 500;
+      color: rgba(255,255,255,.75); text-decoration: none;
+      transition: all .25s;
+    }
+    .eco-link:hover {
+      border-color: var(--gold); color: var(--gold);
+      background: rgba(255,215,0,.07); transform: translateY(-2px);
+    }
+
+    /* ── Section dividers / gradient ──────── */
+    .section-divider { border: none; border-top: 1px solid rgba(255,215,0,.08); margin: 0; }
+    .gradient-section {
+      background: linear-gradient(135deg, rgba(189,147,249,.06) 0%, rgba(255,105,180,.04) 50%, rgba(0,255,255,.04) 100%);
+      border-top: 1px solid rgba(255,215,0,.08);
+      border-bottom: 1px solid rgba(255,215,0,.08);
+    }
+
+    /* ── TERMINAL DEMO ────────────────────── */
+    .terminal {
+      background: #050508; border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px; overflow: hidden; max-width: 680px; margin: 2.5rem auto 0;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .term-bar {
+      background: #1a1a2e; padding: .6rem 1rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .term-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .term-dot.r { background: #ff5f57; }
+    .term-dot.y { background: #febc2e; }
+    .term-dot.g { background: #28c840; }
+    .term-title { font-family: var(--mono); font-size: .78rem; color: var(--dim); margin-left: auto; }
+    .term-body { padding: 1.5rem; font-family: var(--mono); font-size: .85rem; line-height: 1.9; }
+    .t-prompt { color: var(--green); }
+    .t-cmd    { color: #fff; }
+    .t-comment{ color: rgba(255,255,255,.3); }
+    .t-out    { color: var(--dim); }
+    .t-bold   { color: var(--gold); font-weight: 700; }
+    .t-cyan   { color: var(--cyan); }
+    .t-pink   { color: var(--pink); }
+
+    /* ── FINAL CTA ────────────────────────── */
+    .cta-section {
+      text-align: center;
+      background: radial-gradient(ellipse at 50% 100%, rgba(255,215,0,.06) 0%, transparent 65%);
+    }
+    .cta-section h2 { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 800; margin-bottom: 1rem; }
+
+    /* ── FOOTER ───────────────────────────── */
+    .site-footer {
+      padding: 2.5rem 0;
+      border-top: 1px solid rgba(255,215,0,.12);
+      background: rgba(0,0,0,.4);
+    }
+    .footer-inner { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+    .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem 1.5rem; }
+    .footer-links a { color: var(--dim); text-decoration: none; font-size: .875rem; transition: color .2s; }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-copy { font-family: var(--mono); font-size: .8rem; color: rgba(255,255,255,.3); text-align: center; }
+    .footer-copy span { color: var(--gold); }
+
+    /* ── Responsive tweaks ────────────────── */
+    @media (max-width: 640px) {
+      section { padding: 3.5rem 0; }
+      .container { padding: 0 1rem; }
+      .hero { padding: 4.5rem 0 3rem; }
+      .install-box { flex-direction: column; align-items: flex-start; }
+    }
+
+    /* ── Scroll reveal animation ──────────── */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Guarantee band ───────────────────── */
+    .vertical-band {
+      background: linear-gradient(135deg, rgba(255,215,0,.07) 0%, rgba(189,147,249,.06) 35%, rgba(0,255,255,.05) 70%, rgba(255,105,180,.05) 100%);
+      border-top: 1px solid rgba(255,215,0,.18);
+      border-bottom: 1px solid rgba(255,215,0,.18);
+      position: relative; overflow: hidden;
+    }
+    .vertical-band::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,215,0,.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .vertical-band-inner { max-width: 820px; margin: 0 auto; text-align: center; }
+    .vertical-kicker {
+      font-family: var(--mono); font-size: .8rem; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 1.25rem; display: inline-block;
+    }
+    .vertical-headline {
+      font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; line-height: 1.1; margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--pink) 40%, var(--cyan) 80%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .vertical-manifesto { font-size: 1.05rem; color: rgba(255,255,255,.75); line-height: 1.75; max-width: 680px; margin: 0 auto 2rem; }
+    .vertical-manifesto strong { color: var(--gold); }
+    .vertical-cta-row { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-top: .5rem; }
+  </style>
+</head>
+<body>
+
+  <!-- Starfield -->
+  <div class="starfield" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="stars"></div>
+    <div class="stars"></div>
+  </div>
+
+  <!-- Floating decorations -->
+  <div class="float-deco" style="top:18%;left:4%;animation-delay:0s">🔐</div>
+  <div class="float-deco" style="top:35%;right:5%;animation-delay:4s">🗝️</div>
+  <div class="float-deco" style="top:65%;left:2.5%;animation-delay:8s">🛡️</div>
+  <div class="float-deco" style="top:80%;right:9%;animation-delay:6s">✨</div>
+
+  <!-- ── NAV ─────────────────────────────────── -->
+  <nav class="site-nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="https://skvault.skworld.io/" class="nav-logo">🔐 <span>sk</span>vault</a>
+      <ul class="nav-links">
+        <li><a href="#what-it-does">What it does</a></li>
+        <li><a href="#ecosystem-place">Where it sits</a></li>
+        <li><a href="#fixins">The fixins</a></li>
+        <li><a href="#cli">CLI</a></li>
+        <li><a href="https://skworld.io">SKWorld</a></li>
+        <li><a href="https://github.com/smilinTux/skvault" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/smilinTux/skvault" class="nav-cta">Get it ↓</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ── HERO ─────────────────────────────────── -->
+  <header class="hero" id="top">
+    <div class="container">
+      <div class="hero-eyebrow" aria-label="Product category">Sovereign Secrets Vault · smilinTux ecosystem</div>
+
+      <h1 class="hero-title">skvault</h1>
+
+      <p class="hero-tagline">
+        <strong>Your secrets. Your key. Your machine.</strong><br>
+        A KeePass vault sealed to your sovereign identity — opened by gpg-agent, never by a password on disk.
+      </p>
+
+      <p class="hero-sub">
+        The KeePass master is PGP-sealed to your sovereign key and unlocked into gpg-agent.
+        Reached through one stable shim, so the code can move without breaking a single caller.
+      </p>
+
+      <!-- Install box -->
+      <div class="install-box-wrap">
+        <div class="install-box" role="group" aria-label="Usage command">
+          <code class="install-cmd" id="install-cmd-text">skvault unlock  &amp;&amp;  skvault get github</code>
+          <button class="copy-btn" id="copy-btn" onclick="copyInstall()" aria-label="Copy command">copy</button>
+        </div>
+        <p class="install-sub">
+          One stable verb (<code>~/.skenv/bin/skvault</code>) — unlock once, then fetch any secret.
+          <a href="https://github.com/smilinTux/skvault" style="color:var(--cyan);text-decoration:none;" target="_blank" rel="noopener">Read the source ↗</a>
+        </p>
+      </div>
+
+      <!-- CTAs -->
+      <div class="hero-ctas">
+        <a href="https://github.com/smilinTux/skvault" class="btn btn-primary" target="_blank" rel="noopener">⭐ Star on GitHub</a>
+        <a href="#what-it-does" class="btn btn-outline">See what it does</a>
+        <a href="#ecosystem-place" class="btn btn-ghost">Where it sits ↓</a>
+      </div>
+
+      <!-- Trust signals -->
+      <div class="hero-trust" role="list" aria-label="Key properties">
+        <span role="listitem"><span aria-hidden="true">🔐</span> <strong>PGP-sealed master</strong> · gpg-agent unlock</span>
+        <span role="listitem"><span aria-hidden="true">🗄️</span> <strong>KeePass-backed</strong> · open format</span>
+        <span role="listitem"><span aria-hidden="true">🧩</span> <strong>Depends on capauth.seal</strong> · one crypto home</span>
+        <span role="listitem"><span aria-hidden="true">📜</span> <strong>GPL-3.0</strong> · free forever</span>
+      </div>
+    </div>
+  </header>
+
+  <hr class="section-divider">
+
+  <!-- ── WHAT IT DOES ────────────────────────── -->
+  <section id="what-it-does" aria-labelledby="what-heading">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-eyebrow">What it does</div>
+        <h2 class="section-title" id="what-heading">A vault that holds secrets,<br>not your master key.</h2>
+        <p class="section-sub">
+          skvault keeps your credentials in a KeePass database. The database's master passphrase
+          is never typed and never sits on disk in the clear — it's PGP-sealed to your sovereign
+          identity and lives, while unlocked, only inside gpg-agent. Lock it and it's gone again.
+        </p>
+      </div>
+
+      <div class="tiers-grid" style="margin-top:2.5rem">
+
+        <!-- The vault -->
+        <div class="tier-card personal reveal" style="transition-delay:.1s">
+          <span class="tier-badge personal">🗄️ The vault</span>
+          <span class="tier-icon">🔐</span>
+          <h3 class="tier-title">KeePass secrets store</h3>
+          <p class="tier-desc">
+            An open-format KeePass DB you own. Add credentials, fetch them by query,
+            list and filter — all from the CLI, all on your machine.
+          </p>
+          <ul class="tier-list">
+            <li><code>vault_creds</code> — store / get / list credentials</li>
+            <li><code>creds-init</code> migrates the DB to skvault's path</li>
+            <li>Query by site, reveal only with <code>--show</code></li>
+            <li>No browser, no cloud, no sync-to-vendor</li>
+            <li>Standard KeePass — read it with any client</li>
+          </ul>
+        </div>
+
+        <!-- The seal lifecycle -->
+        <div class="tier-card team reveal" style="transition-delay:.2s">
+          <span class="tier-badge team">🗝️ The seal</span>
+          <span class="tier-icon">🔑</span>
+          <h3 class="tier-title">gpg-agent seal lifecycle</h3>
+          <p class="tier-desc">
+            unlock / lock / status drive a gpg-agent seal. The master is PGP-sealed to
+            your sovereign key via <strong>capauth.seal</strong>; unlock unseals it into the
+            agent, lock evicts it.
+          </p>
+          <ul class="tier-list">
+            <li><code>unlock [--word W]</code> — unseal into gpg-agent</li>
+            <li><code>lock</code> — evict the master from the agent</li>
+            <li><code>status</code> — is the vault open right now?</li>
+            <li>An unlock-word blob, sealed not stored</li>
+            <li>Sensitive actions can require a TOTP gate</li>
+          </ul>
+        </div>
+
+        <!-- Recovery -->
+        <div class="tier-card enterprise reveal" style="transition-delay:.3s">
+          <span class="tier-badge enterprise">🧬 The safety net</span>
+          <span class="tier-icon">🛟</span>
+          <h3 class="tier-title">Sovereign social recovery</h3>
+          <p class="tier-desc">
+            Lose the key and you're not locked out forever. Split the passphrase into
+            k-of-n Shamir shares, each PGP-sealed to a holder. No single holder can
+            recover alone — the HashiCorp-Vault unseal model, made sovereign.
+          </p>
+          <ul class="tier-list">
+            <li><code>vault-share-init --holders a,b,c</code></li>
+            <li><code>vault-recover --providers a,b</code></li>
+            <li>Shamir secret sharing over GF(256)</li>
+            <li>Each share sealed to one holder's PGP key</li>
+            <li>RFC-6238 TOTP second-factor on recovery</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ── WHERE IT SITS IN THE ECOSYSTEM ──────── -->
+  <section id="ecosystem-place" class="gradient-section" aria-labelledby="place-heading">
+    <div class="container">
+      <div class="reveal" style="text-align:center">
+        <div class="section-eyebrow">Where it sits in the ecosystem</div>
+        <h2 class="section-title" id="place-heading" style="margin:0 auto">capauth seals it. skvault keeps it. Everyone else asks skvault.</h2>
+        <p class="section-sub" style="margin:.75rem auto 0">
+          One crypto home, one secrets home, many consumers. capauth owns identity and the
+          seal/unseal primitive. skvault is the only thing that holds secrets. Apps never touch
+          the master — they go through the shim.
+        </p>
+      </div>
+
+      <!-- Flow: capauth → skvault → consumers -->
+      <div class="eco-flow reveal" style="transition-delay:.1s" role="img" aria-label="capauth crypto home seals into skvault secrets vault, which is consumed by skos, skguide and .claude hooks">
+        <a href="https://github.com/smilinTux/capauth" target="_blank" rel="noopener" class="flow-node" style="text-decoration:none">
+          <span class="flow-icon">📐</span>
+          <span class="flow-role">Crypto home</span>
+          <span class="flow-name">capauth</span>
+          <span class="flow-desc">identity · sign / verify · <strong style="color:var(--gold)">seal / unseal</strong></span>
+        </a>
+        <div class="flow-arrow" aria-hidden="true">→<small>seal</small></div>
+        <div class="flow-node keystone">
+          <span class="flow-icon">🔐</span>
+          <span class="flow-role">Secrets home</span>
+          <span class="flow-name">skvault</span>
+          <span class="flow-desc">KeePass vault · seal lifecycle · recovery · TOTP</span>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">→<small>shim</small></div>
+        <div class="flow-node">
+          <span class="flow-icon">🤝</span>
+          <span class="flow-role">Consumers</span>
+          <span class="flow-name">skos · skguide</span>
+          <span class="flow-desc"><code style="font-family:var(--mono);color:var(--gold)">skos.secrets</code> · skguide · <code style="font-family:var(--mono);color:var(--gold)">.claude</code> hooks</span>
+        </div>
+      </div>
+
+      <!-- Siblings -->
+      <div class="reveal" style="text-align:center;margin-top:3rem">
+        <div class="section-eyebrow" style="margin-bottom:.25rem">Sibling services — split from the same lineage</div>
+        <p class="section-sub" style="margin:0 auto 0;font-size:.92rem">
+          skvault sits alongside the other single-purpose <code style="font-family:var(--mono);color:var(--gold)">sk*</code> services.
+          skingest used to <em>be</em> the vault's home — now both seal through capauth and do exactly one job.
+        </p>
+        <div class="siblings-row">
+          <a href="https://github.com/smilinTux/skingest" target="_blank" rel="noopener" class="sibling-chip">🗂️ skingest <em>· ingestion</em></a>
+          <a href="https://skcomms.skworld.io" target="_blank" rel="noopener" class="sibling-chip">💬 skcomms <em>· transport</em></a>
+          <a href="https://skchat.skworld.io" target="_blank" rel="noopener" class="sibling-chip">🗨️ skchat <em>· chat</em></a>
+          <a href="https://github.com/smilinTux/capauth" target="_blank" rel="noopener" class="sibling-chip">📐 capauth <em>· identity</em></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ── THE FIXINS ──────────────────────────── -->
+  <section id="fixins" aria-labelledby="fixins-heading">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-eyebrow">The fixins</div>
+        <h2 class="section-title" id="fixins-heading">The engineering decisions behind it.</h2>
+        <p class="section-sub">
+          skvault is the result of a deliberate refactor (EPIC <code style="font-family:var(--mono);color:var(--gold)">11eeac9e</code>).
+          Four choices define it.
+        </p>
+      </div>
+
+      <div class="fixins-grid">
+
+        <!-- Split from skingest -->
+        <div class="c-card reveal" style="transition-delay:.05s">
+          <div class="c-card-head">
+            <span class="c-icon">✂️</span>
+            <div>
+              <div class="c-label">F1</div>
+              <div class="c-name">Split out of skingest</div>
+            </div>
+          </div>
+          <p>
+            The vault used to live inside <strong>skingest</strong>. Secrets management and document
+            ingestion are different jobs, so the vault became its own package. skingest is now
+            <strong>pure ingestion</strong>; both seal the same way, neither owns the other.
+          </p>
+        </div>
+
+        <!-- capauth.seal dependency -->
+        <div class="c-card reveal" style="transition-delay:.1s">
+          <div class="c-card-head">
+            <span class="c-icon">📐</span>
+            <div>
+              <div class="c-label">F2</div>
+              <div class="c-name">Depends on capauth.seal</div>
+            </div>
+          </div>
+          <p>
+            Crypto has <strong>one home: capauth</strong> — identity, sign/verify, and the
+            <code>seal/unseal</code> primitive. skvault doesn't reimplement any of it; it
+            <strong>depends on <code>capauth.seal</code></strong> to PGP-seal the master and
+            unseal it into gpg-agent. skingest seals through the same primitive.
+          </p>
+        </div>
+
+        <!-- The stable shim seam -->
+        <div class="c-card reveal" style="transition-delay:.15s">
+          <div class="c-card-head">
+            <span class="c-icon">🔌</span>
+            <div>
+              <div class="c-label">F3</div>
+              <div class="c-name">The stable shim seam</div>
+            </div>
+          </div>
+          <p>
+            Every caller — agents, <code>.claude</code> hooks, <code>skos.secrets</code>, skguide —
+            invokes the <strong><code>skvault</code> shim</strong> at <code>~/.skenv/bin/skvault</code>,
+            never the package. When the backend moves, <strong>you edit one line</strong> in the shim
+            and nothing downstream breaks. The seam outlives the implementation.
+          </p>
+        </div>
+
+        <!-- Never holds the master -->
+        <div class="c-card reveal" style="transition-delay:.2s">
+          <div class="c-card-head">
+            <span class="c-icon">🛡️</span>
+            <div>
+              <div class="c-label">F4</div>
+              <div class="c-name">Never holds the master</div>
+            </div>
+          </div>
+          <p>
+            The KeePass master passphrase is <strong>never stored in plaintext</strong> and never
+            kept by skvault itself. It's sealed to your sovereign PGP key; while unlocked it lives
+            <strong>only in gpg-agent</strong>; <code>lock</code> evicts it. Compromise the vault file
+            and you still have nothing without the key.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ── CLI / TERMINAL DEMO ─────────────────── -->
+  <section id="cli" class="gradient-section" aria-label="CLI demo">
+    <div class="container" style="text-align:center">
+      <div class="reveal">
+        <div class="section-eyebrow">The stable verb</div>
+        <h2 class="section-title">One shim. Every command.</h2>
+        <p class="section-sub" style="margin:0 auto">
+          <code style="font-family:var(--mono);color:var(--gold)">skvault unlock | lock | status | get &lt;q&gt; | list [filter] | creds-* | vault-*</code>
+        </p>
+      </div>
+
+      <div class="terminal reveal" style="transition-delay:.1s" role="img" aria-label="Terminal showing a skvault unlock + get session">
+        <div class="term-bar">
+          <div class="term-dot r"></div>
+          <div class="term-dot y"></div>
+          <div class="term-dot g"></div>
+          <span class="term-title">~/  — skvault</span>
+        </div>
+        <div class="term-body">
+          <div><span class="t-prompt">$ </span><span class="t-cmd">skvault status</span></div>
+          <div class="t-out">   🔒 vault <span class="t-pink">locked</span> — master not in gpg-agent</div>
+          <br>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">skvault unlock</span></div>
+          <div class="t-out">   unsealing via <span class="t-bold">capauth.seal</span> → gpg-agent …</div>
+          <div class="t-out">   ✅ vault <span class="t-cyan">unlocked</span> — master held by agent only</div>
+          <br>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">skvault list git</span></div>
+          <div class="t-out">   github.com · gitea.local · gitlab.work</div>
+          <br>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">skvault get github --show</span></div>
+          <div class="t-out">   user: <span class="t-bold">chef</span>   pass: <span class="t-bold">••••••••••••</span>  <span class="t-comment"># revealed to stdout</span></div>
+          <br>
+          <div><span class="t-prompt">$ </span><span class="t-cmd">skvault lock</span></div>
+          <div class="t-out">   🔒 master evicted from gpg-agent — sealed again</div>
+        </div>
+      </div>
+
+      <p class="reveal" style="margin-top:1.75rem;color:var(--dim);font-size:.9rem;max-width:620px;margin-left:auto;margin-right:auto;transition-delay:.2s">
+        Consumers like <strong style="color:rgba(255,255,255,.75)">skos.secrets</strong>, <strong style="color:rgba(255,255,255,.75)">skguide</strong>,
+        and your <strong style="color:rgba(255,255,255,.75)">.claude</strong> hooks call the exact same shim — never the package, never the master.
+      </p>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ── NEVER-HOLDS-MASTER GUARANTEE BAND ───── -->
+  <section class="vertical-band" id="guarantee" aria-labelledby="guarantee-heading">
+    <div class="container">
+      <div class="vertical-band-inner reveal">
+        <div class="vertical-kicker">The guarantee</div>
+        <h2 class="vertical-headline" id="guarantee-heading">The vault never holds your master.</h2>
+        <p class="vertical-manifesto">
+          Most secret stores keep a key that unlocks everything — steal the store, steal the kingdom.
+          <strong>skvault doesn't.</strong> The master is sealed to your sovereign PGP identity by capauth,
+          held only by gpg-agent while open, and evicted on lock. The vault file alone is worthless.
+          Crypto lives in capauth, secrets live in skvault, callers go through one shim —
+          and your master goes <strong>nowhere</strong>.
+        </p>
+        <div class="vertical-cta-row">
+          <a href="https://github.com/smilinTux/skvault" class="btn btn-primary" target="_blank" rel="noopener">🔐 Read the code</a>
+          <a href="https://github.com/smilinTux/capauth" class="btn btn-outline" target="_blank" rel="noopener">📐 See capauth</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ── ECOSYSTEM ───────────────────────────── -->
+  <section id="ecosystem" aria-labelledby="eco-heading">
+    <div class="container" style="text-align:center">
+      <div class="reveal">
+        <div class="section-eyebrow">The SKWorld family</div>
+        <h2 class="section-title" id="eco-heading">Part of the smilinTux ecosystem</h2>
+        <p class="section-sub" style="margin:0 auto 1rem">
+          skvault is the secrets layer of the <strong>SKWorld sovereign AI ecosystem</strong>.
+          It seals through capauth and is consumed by skos, skguide, and the rest of the family.
+        </p>
+      </div>
+      <div class="eco-grid reveal" style="transition-delay:.1s">
+        <a href="https://skworld.io"        class="eco-link" target="_blank" rel="noopener">🌍 skworld.io</a>
+        <a href="https://skos.skworld.io"   class="eco-link" target="_blank" rel="noopener">🐧 skos</a>
+        <a href="https://github.com/smilinTux/capauth" class="eco-link" target="_blank" rel="noopener">📐 capauth</a>
+        <a href="https://github.com/smilinTux/skingest" class="eco-link" target="_blank" rel="noopener">🗂️ skingest</a>
+        <a href="https://skcomms.skworld.io" class="eco-link" target="_blank" rel="noopener">💬 skcomms</a>
+        <a href="https://skchat.skworld.io" class="eco-link" target="_blank" rel="noopener">🗨️ skchat</a>
+        <a href="https://github.com/smilinTux/skvault" class="eco-link" target="_blank" rel="noopener">🔐 GitHub</a>
+        <a href="https://lumina.skworld.io" class="eco-link" target="_blank" rel="noopener">✨ Lumina</a>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ── FINAL CTA ───────────────────────────── -->
+  <section class="cta-section" aria-labelledby="cta-heading">
+    <div class="container" style="text-align:center">
+      <div class="reveal">
+        <div style="font-size:3rem;margin-bottom:1rem">🔐</div>
+        <h2 id="cta-heading">Own your secrets.</h2>
+        <p style="color:var(--dim);margin:.75rem auto 2.5rem;max-width:540px;font-size:1.05rem">
+          KeePass secrets, a PGP-sealed master, one stable shim. The vault holds everything —
+          except the one key that would matter.
+        </p>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:.75rem;margin-bottom:2rem">
+          <div class="install-box" style="max-width:560px">
+            <code class="install-cmd">skvault unlock  &amp;&amp;  skvault get github</code>
+            <button class="copy-btn" onclick="copyInstall()" aria-label="Copy command">copy</button>
+          </div>
+        </div>
+        <div class="hero-ctas">
+          <a href="https://github.com/smilinTux/skvault" class="btn btn-primary" target="_blank" rel="noopener">⭐ Star on GitHub</a>
+          <a href="https://github.com/smilinTux/capauth" class="btn btn-outline" target="_blank" rel="noopener">📐 capauth</a>
+          <a href="https://skworld.io" class="btn btn-ghost" target="_blank" rel="noopener">🌍 Explore SKWorld</a>
+        </div>
+        <p style="margin-top:2rem;font-family:var(--mono);font-size:.85rem;color:rgba(255,215,0,.6)">
+          "staycuriousANDkeepsmilin" 🐧
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ──────────────────────────────── -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-links" role="list" aria-label="Ecosystem links">
+          <a href="https://skworld.io" role="listitem">🌍 SKWorld</a>
+          <a href="https://skos.skworld.io" role="listitem">🐧 skos</a>
+          <a href="https://github.com/smilinTux/capauth" role="listitem">📐 CapAuth</a>
+          <a href="https://github.com/smilinTux/skingest" role="listitem">🗂️ skingest</a>
+          <a href="https://skcomms.skworld.io" role="listitem">💬 skcomms</a>
+          <a href="https://github.com/smilinTux/skvault" role="listitem">🔐 GitHub</a>
+          <a href="https://lumina.skworld.io" role="listitem">✨ Lumina</a>
+          <a href="https://smilintux.org" role="listitem">🐧 smilinTux</a>
+        </div>
+        <div class="footer-copy">
+          &copy; 2026 SKWorld · Sovereign Technology for Creators ·
+          <span>staycuriousANDkeepsmilin</span> ·
+          GPL-3.0 · <a href="https://github.com/smilinTux" style="color:var(--dim)">smilinTux</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ── Scripts ─────────────────────────────── -->
+  <script>
+    // Copy command
+    function copyInstall() {
+      const cmd = 'skvault unlock && skvault get github';
+      navigator.clipboard.writeText(cmd).then(() => {
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+          const orig = btn.textContent;
+          btn.textContent = '✓ copied';
+          btn.classList.add('copied');
+          setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+        });
+      }).catch(() => {
+        const el = document.getElementById('install-cmd-text');
+        if (el) {
+          const range = document.createRange();
+          range.selectNode(el);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+        }
+      });
+    }
+
+    // Scroll reveal
+    (function() {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.1 });
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    })();
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      });
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,78 @@
+# skvault — The Sovereign Secrets Vault
+
+> A KeePass-backed secrets vault whose master key is PGP-sealed to your sovereign identity and unlocked into gpg-agent. Split out of skingest, depends on capauth.seal, reached through one stable shim. The vault never holds your master. GPL-3.0.
+
+skvault is the sovereign secrets-vault package of the smilinTux / SKWorld ecosystem. It keeps
+credentials in a KeePass database whose master passphrase is never stored in plaintext — it is
+PGP-sealed to your sovereign identity (via `capauth.seal`) and, while unlocked, held only inside
+gpg-agent. `lock` evicts it. Compromise the vault file alone and you have nothing without the key.
+
+skvault was split out of skingest (EPIC 11eeac9e) so secrets management is its own single-purpose
+service. The user-facing entry point is a stable bash shim at `~/.skenv/bin/skvault` that delegates
+to the `skvault-backend` console script — every consumer calls the shim, never the package, so the
+implementation can move by editing one line.
+
+## Usage
+
+```sh
+skvault unlock            # unseal the master into gpg-agent (via capauth.seal)
+skvault status            # is the vault open?
+skvault list git          # list matching credentials
+skvault get github --show # fetch a credential
+skvault lock              # evict the master from gpg-agent
+```
+
+## Command surface
+
+`skvault unlock | lock | status | get <q> | list [filter] | creds-* | vault-*`
+
+- **unlock [--word W]** — unseal the KeePass master into gpg-agent
+- **lock** — evict the master from gpg-agent (re-seal)
+- **status** (vault-status) — current seal state
+- **get <q>** (creds-get) — fetch a credential by query
+- **list [filter]** (creds-list) — list credentials
+- **creds-init / creds-status** — initialize / inspect the KeePass DB
+- **vault-share-init --holders a,b,c [--threshold k]** — split passphrase into k-of-n Shamir shares, each PGP-sealed to a holder
+- **vault-recover --providers a,b [--totp CODE]** — reconstruct the passphrase from shares
+- **seal-word** — seal the unlock-word blob
+
+## Architecture — where it sits
+
+| Component | Role |
+|-----------|------|
+| **capauth** | crypto home — identity, sign/verify, and the `seal/unseal` primitive |
+| **skvault** | secrets home — KeePass vault + seal lifecycle + recovery + TOTP (DEPENDS ON `capauth.seal`) |
+| **skingest** | pure ingestion — the vault's former home; now also seals via `capauth.seal` |
+| **Consumers** | `skos.secrets`, skguide, `.claude` hooks — all reach skvault through the shim |
+
+Flow: **capauth (seal) → skvault (keep) → skos / skguide / hooks (consume)**.
+Sibling single-purpose services: skingest (ingestion), skcomms (transport), skchat (chat).
+
+## The fixins — the engineering story
+
+- **Split out of skingest** — secrets management and document ingestion are different jobs; the vault became its own package.
+- **Depends on capauth.seal** — crypto has one home (capauth); skvault reuses its seal/unseal rather than reimplementing it.
+- **The stable shim seam** — `~/.skenv/bin/skvault` decouples every caller from where the backend lives; migration edits one line.
+- **Never holds the master** — the KeePass master is sealed to your PGP key and lives only in gpg-agent while open; the vault file alone is worthless.
+
+## Components
+
+- **vault_creds** — KeePass credential store/get/list
+- **vault** — gpg-agent seal lifecycle (lock/unlock/status)
+- **vault_recovery + shamir** — k-of-n sovereign social recovery (HashiCorp-Vault model, Shamir over GF(256))
+- **totp** — RFC 6238 second-factor gate on sensitive actions
+
+## Links
+
+- [Live site](https://skvault.skworld.io)
+- [GitHub repo](https://github.com/smilinTux/skvault)
+- [capauth — crypto home](https://github.com/smilinTux/capauth)
+- [skingest — ingestion sibling](https://github.com/smilinTux/skingest)
+- [skos — sovereign agent OS](https://skos.skworld.io)
+- [SKWorld ecosystem](https://skworld.io)
+
+## About smilinTux
+
+skvault is part of the **smilinTux sovereign AI ecosystem** — a suite of open-source tools built
+by King Divad (Chef/David) and Lumina to give humans and AI agents genuine, authentic
+infrastructure they can own and trust. No corporate clouds. No black-box vendors. GPL-3.0 forever.
