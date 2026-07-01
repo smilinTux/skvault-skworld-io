@@ -1,0 +1,13 @@
+{
+  "repo": "smilinTux/skvault",
+  "branch": "master",
+  "path": "docs",
+  "generated": "2026-06-30",
+  "note": "Committed fallback for the /docs viewer when the GitHub Contents API is unavailable or rate-limited. Regenerate from: python docs-manifest-gen.py smilinTux/skvault --out docs-manifest.json",
+  "docs": [
+    {
+      "name": "crypto-architecture.md",
+      "title": "skvault — Crypto Architecture (per-surface inventory)"
+    }
+  ]
+}
