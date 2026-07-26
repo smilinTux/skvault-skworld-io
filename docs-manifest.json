@@ -2,9 +2,13 @@
   "repo": "smilinTux/skvault",
   "branch": "master",
   "path": "docs",
-  "generated": "2026-07-25",
+  "generated": "2026-07-26",
   "note": "Committed fallback for the /docs viewer when the GitHub Contents API is unavailable or rate-limited. Regenerate from: python docs-manifest-gen.py smilinTux/skvault --out docs-manifest.json",
   "docs": [
+    {
+      "name": "PGP_AND_KDBX_BACKUP_ESCROW.md",
+      "title": "skvault: PGP Secret Key + .kdbx Backup / Escrow Procedure"
+    },
     {
       "name": "crypto-architecture.md",
       "title": "skvault — Crypto Architecture (per-surface inventory)"
