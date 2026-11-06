@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "skvault Component Map",
+    "subtitle": "KeePass-backed secrets vault, PGP-sealed to capauth, reached through one stable shim",
+    "output": "skvault.architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "consumers_cli", "type": "external", "label": "CLI consumers", "sublabel": "skos.secrets, skguide, .claude session hooks", "pos": [40, 40], "size": [220, 80] },
+    { "id": "consumers_hermes", "type": "external", "label": "Hermes DM", "sublabel": "unlock --word chat path", "pos": [320, 40], "size": [200, 80] },
+    { "id": "shim", "type": "backend", "label": "skvault shim", "sublabel": "~/.skenv/bin/skvault, host state, not shipped by this repo", "pos": [40, 200], "size": [240, 80] },
+    { "id": "backend", "type": "backend", "label": "skvault-backend", "sublabel": "console script, skvault.cli:main (click group)", "pos": [340, 200], "size": [220, 80] },
+    { "id": "core", "type": "backend", "label": "skvault package", "sublabel": "vault, vault_creds, vault_recovery + shamir, totp, config", "pos": [180, 360], "size": [340, 90] },
+    { "id": "seal", "type": "security", "label": "capauth.seal", "sublabel": "the one crypto implementation: seal, unseal, recipients", "pos": [80, 520], "size": [220, 80] },
+    { "id": "agent", "type": "security", "label": "gpg-agent", "sublabel": "caches passphrase only while unlocked", "pos": [360, 520], "size": [200, 80] },
+    { "id": "blob", "type": "database", "label": "sealed master blob", "sublabel": "~/.config/skvault/keepass-master.asc (PGP-sealed)", "pos": [20, 680], "size": [240, 80] },
+    { "id": "kdbx", "type": "database", "label": "KeePass .kdbx", "sublabel": "SKVAULT_KEEPASS_DB, your database stays yours", "pos": [300, 680], "size": [220, 80] },
+    { "id": "audit", "type": "database", "label": "audit log", "sublabel": "~/clawd/logs/keepass-access.log, every get/list/init", "pos": [560, 680], "size": [200, 80] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Consumers (never import skvault directly)", "wraps": ["consumers_cli", "consumers_hermes"] },
+    { "kind": "region", "label": "skvault package (shim seam + core)", "wraps": ["shim", "backend", "core"] },
+    { "kind": "security-group", "label": "capauth (crypto home)", "wraps": ["seal", "agent"] }
+  ],
+  "connections": [
+    { "id": "cli-to-shim", "from": "consumers_cli", "to": "shim", "label": "unlock, lock, status, get, list", "variant": "default" },
+    { "id": "hermes-to-shim", "from": "consumers_hermes", "to": "shim", "label": "unlock --word", "variant": "default" },
+    { "id": "shim-to-backend", "from": "shim", "to": "backend", "label": "the one BACKEND= line (the shim seam)", "variant": "dashed" },
+    { "id": "backend-to-core", "from": "backend", "to": "core", "label": "click group dispatch", "variant": "default" },
+    { "id": "core-to-seal", "from": "core", "to": "seal", "label": "seal / unseal / recipients", "variant": "security" },
+    { "id": "seal-to-agent", "from": "seal", "to": "agent", "label": "decrypt gated by cached passphrase", "variant": "security" },
+    { "id": "core-to-blob", "from": "core", "to": "blob", "label": "unseal master only while unlocked", "variant": "security" },
+    { "id": "core-to-kdbx", "from": "core", "to": "kdbx", "label": "PyKeePass(db, master); master forgotten", "variant": "default" },
+    { "id": "core-to-audit", "from": "core", "to": "audit", "label": "every get, list, init", "variant": "default" }
+  ]
+}
