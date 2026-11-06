@@ -622,6 +622,7 @@
         <li><a href="#ecosystem-place">Where it sits</a></li>
         <li><a href="#fixins">The fixins</a></li>
         <li><a href="#cli">CLI</a></li>
+        <li><a href="#architecture">Architecture</a></li>
         <li><a href="/docs.html">Docs</a></li>
         <li><a href="https://skworld.io">SKWorld</a></li>
         <li><a href="https://github.com/smilinTux/skvault" target="_blank" rel="noopener">GitHub</a></li>
@@ -939,6 +940,27 @@
         Consumers like <strong style="color:rgba(255,255,255,.75)">skos.secrets</strong>, <strong style="color:rgba(255,255,255,.75)">skguide</strong>,
         and your <strong style="color:rgba(255,255,255,.75)">.claude</strong> hooks call the exact same shim — never the package, never the master.
       </p>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ── ARCHITECTURE (interactive diagram) ──── -->
+  <section id="architecture" aria-labelledby="architecture-heading">
+    <div class="container" style="text-align:center">
+      <div class="reveal">
+        <div class="section-eyebrow">Architecture</div>
+        <h2 class="section-title" id="architecture-heading" style="margin:0 auto">Explore the component map.</h2>
+        <p class="section-sub" style="margin:.75rem auto 0">
+          The same shape as the picture above, as an explorable diagram: consumers, the
+          shim seam, the skvault package, <code style="font-family:var(--mono);color:var(--gold)">capauth.seal</code>
+          plus gpg-agent, and the sealed master blob, your <code style="font-family:var(--mono);color:var(--gold)">.kdbx</code>,
+          and the audit log it writes to.
+        </p>
+      </div>
+      <div class="reveal" style="margin-top:1.75rem;transition-delay:.1s">
+        <a class="sibling-chip" href="diagrams/skvault.architecture.html" target="_blank" rel="noopener">🗺️ Open the interactive component map ↗</a>
+      </div>
     </div>
   </section>
 
